@@ -46,12 +46,28 @@ void *readNextLine(void *fileArg) {
       break;
     }
   }
-  // printf("T3 before\n");fflush(stdout);
+  if (line_offset > 0) {
+    line_buf[line_offset] = 0;
+    // printf("T3 before\n");fflush(stdout);
+    pthread_mutex_lock(&mutex);
+    // printf("T3 after\n");fflush(stdout);
+    memcpy(shared_line, line_buf, (line_offset + 1) * sizeof(char));
+    shared_line_ready = true;
+    pthread_cond_signal(&cond);
+    while (shared_line_ready) {
+      // printf("T4 before\n");fflush(stdout);
+      pthread_cond_wait(&cond, &mutex);
+      // printf("T4 after\n");fflush(stdout);
+    }
+    pthread_mutex_unlock(&mutex);
+  }
+  // printf("T5 before\n");fflush(stdout);
   pthread_mutex_lock(&mutex);
-  // printf("T3 after\n");fflush(stdout);
+  // printf("T5 after\n");fflush(stdout);
   shared_done_reading = true;
   pthread_cond_signal(&cond);
   pthread_mutex_unlock(&mutex);
+
   return NULL;
 }
 
