@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #define READ_SIZE 8
 #define MAX_LINE_LEN READ_SIZE * 20
@@ -18,7 +19,7 @@ void *readNextLine(void *fileArg) {
   char line_buf[MAX_LINE_LEN];
   size_t line_offset = 0;
   while (true) {
-    size_t bytesread = fread(&read_buf, sizeof(char), READ_SIZE, file);
+    size_t bytesread = read(fileno(file), read_buf, READ_SIZE);
     for (size_t i = 0; i < bytesread; ++i) {
       if (read_buf[i] == '\n') {
         line_buf[line_offset] = 0;
