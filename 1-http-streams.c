@@ -13,13 +13,13 @@ static bool shared_line_ready = false;
 static bool shared_done_reading = false;
 static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
-void *readNextLine(void *fileArg) {
-  FILE *file = (FILE *)fileArg;
+void *readNextLine(void *fdArg) {
+  int *fd = (int *)fdArg;
   char read_buf[READ_SIZE];
   char line_buf[MAX_LINE_LEN];
   size_t line_offset = 0;
   while (true) {
-    size_t bytesread = read(fileno(file), read_buf, READ_SIZE);
+    size_t bytesread = read(*fd, read_buf, READ_SIZE);
     for (size_t i = 0; i < bytesread; ++i) {
       if (read_buf[i] == '\n') {
         line_buf[line_offset] = 0;
@@ -79,7 +79,8 @@ int main() {
     return EXIT_FAILURE;
   }
   pthread_t tid;
-  pthread_create(&tid, NULL, readNextLine, file);
+  int fd = fileno(file);
+  pthread_create(&tid, NULL, readNextLine, &fd);
 
   while (true) {
     // printf("M1 before\n"); fflush(stdout);
