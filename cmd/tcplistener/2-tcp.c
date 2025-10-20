@@ -1,3 +1,4 @@
+#include <arpa/inet.h>
 #include <assert.h>
 #include <netinet/in.h>
 #include <pthread.h>
@@ -7,6 +8,28 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
+
+static void print_socket_4tuple(int sockfd) {
+  struct sockaddr_in local;
+
+  socklen_t local_size = sizeof(local);
+  assert(getsockname(sockfd, (struct sockaddr *)&local, &local_size) == 0);
+  assert(local.sin_family == AF_INET);
+  char local_ip[INET6_ADDRSTRLEN];
+  inet_ntop(local.sin_family, &local.sin_addr, local_ip, sizeof(local_ip));
+  int local_port = ntohs(local.sin_port);
+
+  struct sockaddr_in remote;
+  socklen_t remote_size = sizeof(remote);
+  assert(getpeername(sockfd, (struct sockaddr *)&remote, &remote_size) == 0);
+  assert(remote.sin_family == AF_INET);
+  char remote_ip[INET6_ADDRSTRLEN];
+  inet_ntop(remote.sin_family, &remote.sin_addr, remote_ip, sizeof(remote_ip));
+  int remote_port = ntohs(remote.sin_port);
+
+  printf("local: %s:%d\n", local_ip, local_port);
+  printf("remote: %s:%d\n", remote_ip, remote_port);
+}
 
 #define READ_SIZE 8
 #define MAX_LINE_LEN READ_SIZE * 20
@@ -81,7 +104,7 @@ int main() {
     perror("Socket creation failed");
     return EXIT_FAILURE;
   }
-  printf("Socket created\n");
+  printf("Socket created: sockfd=%d\n", sockfd);
   int one = 1;
   if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEPORT | SO_REUSEADDR, (void *)&one,
                  sizeof(one)) != 0) {
@@ -99,7 +122,12 @@ int main() {
     perror("socket bind failed");
     return EXIT_FAILURE;
   }
-  printf("Socket binded\n");
+  char ip_out[69];
+  printf("Socket binded: ip=%s:%hu\n",
+         inet_ntop(servaddr.sin_family, &servaddr.sin_addr, ip_out,
+                   INET_ADDRSTRLEN),
+         ntohs(servaddr.sin_port));
+
   // listen for connections
   if (listen(sockfd, 5) != 0) {
     perror("Listen failed");
@@ -121,7 +149,8 @@ int main() {
       perror("Server accept failed");
       exit(EXIT_FAILURE);
     }
-    printf("Accepted connection from client\n");
+    printf("Accepted connection from client. connfd=%d\n", connfd);
+    print_socket_4tuple(connfd);
     pthread_t tid;
     pthread_create(&tid, NULL, readNextLine, (void *)(intptr_t)connfd);
     while (!shared_done_reading) {
