@@ -96,7 +96,12 @@ void *readNextLine(void *fd) {
   return NULL;
 }
 
-int main() {
+int main(int argc, char *argv[]) {
+
+  bool shouldReplyWithEcho = false;
+  if (argc >= 2 && strcmp(argv[1], "echo") == 0) {
+    shouldReplyWithEcho = true;
+  }
 
   // create the TCP socket
   int sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -169,10 +174,12 @@ int main() {
       if (shared_line_ready) {
         printf("read: %s\n", shared_line);
         // fflush(stdout);
-        write(connfd, "echo: ", 6);
-        write(connfd, shared_line,
-              strlen(shared_line)); // perf: return line len
-        write(connfd, "\r\n", 2);
+        if (shouldReplyWithEcho) {
+          write(connfd, "echo: ", 6);
+          write(connfd, shared_line,
+                strlen(shared_line)); // perf: return line len
+          write(connfd, "\r\n", 2);
+        }
         shared_line_ready = false;
         pthread_cond_signal(&cond);
       }
