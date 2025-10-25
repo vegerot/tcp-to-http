@@ -111,7 +111,7 @@ int main(int argc, char *argv[]) {
   }
   printf("Socket created: sockfd=%d\n", sockfd);
   int one = 1;
-  if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEPORT | SO_REUSEADDR, (void *)&one,
+  if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, (void *)&one,
                  sizeof(one)) != 0) {
     perror("set socket opt failed! ");
     return -1;
