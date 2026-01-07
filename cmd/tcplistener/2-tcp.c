@@ -48,14 +48,12 @@ void *readNextLine(void *fd) {
     ssize_t bytesread = read((int)(intptr_t)fd, read_buf, READ_SIZE);
     if (bytesread < 0) {
       perror("read error: ");
+      printf("bytesread: %zu\n", bytesread);
       break;
-    }
-    // printf("bytesread: %zu\n", bytesread);
-    if (bytesread < 0) {
     }
     for (ssize_t i = 0; i < bytesread; ++i) {
       if (read_buf[i] == '\n') {
-        line_buf[line_offset] = 0;
+        line_buf[line_offset] = '\0';
         // printf("T1 before\n");
         fflush(stdout);
         pthread_mutex_lock(&mutex);
@@ -186,6 +184,8 @@ int main(int argc, char *argv[]) {
       pthread_mutex_unlock(&mutex);
     }
     pthread_join(tid, NULL);
+    printf("Connection closed. connfd=%d ", connfd);
+    print_socket_4tuple(connfd);
     close(connfd);
   }
 
