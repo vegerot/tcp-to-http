@@ -94,6 +94,41 @@ void *readNextLine(void *fd) {
   return NULL;
 }
 
+void handle_client(int connfd, bool shouldReplyWithEcho) {
+  printf("Accepted connection from client. connfd=%d\n", connfd);
+  print_socket_4tuple(connfd);
+  pthread_t tid;
+  pthread_create(&tid, NULL, readNextLine, (void *)(intptr_t)connfd);
+  while (!shared_done_reading) {
+    // printf("M1 before\n");
+    // fflush(stdout);
+    pthread_mutex_lock(&mutex);
+    // printf("M1 after\n");
+    // fflush(stdout);
+    while (!shared_line_ready && !shared_done_reading) {
+      // printf("M2 before\n");
+      // fflush(stdout);
+      pthread_cond_wait(&cond, &mutex);
+      // printf("M2 after\n");
+      // fflush(stdout);
+    }
+    if (shared_line_ready) {
+      printf("read: %s\n", shared_line);
+      // fflush(stdout);
+      if (shouldReplyWithEcho) {
+        write(connfd, "echo: ", 6);
+        write(connfd, shared_line,
+              strlen(shared_line)); // perf: return line len
+        write(connfd, "\r\n", 2);
+      }
+      shared_line_ready = false;
+      pthread_cond_signal(&cond);
+    }
+    pthread_mutex_unlock(&mutex);
+  }
+  pthread_join(tid, NULL);
+}
+
 int main(int argc, char *argv[]) {
 
   bool shouldReplyWithEcho = false;
@@ -109,8 +144,8 @@ int main(int argc, char *argv[]) {
   }
   printf("Socket created: sockfd=%d\n", sockfd);
   int one = 1;
-  if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, (void *)&one,
-                 sizeof(one)) != 0) {
+  if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, (void *)&one, sizeof(one)) !=
+      0) {
     perror("set socket opt failed! ");
     return -1;
   }
@@ -152,39 +187,8 @@ int main(int argc, char *argv[]) {
       perror("Server accept failed");
       exit(EXIT_FAILURE);
     }
-    printf("Accepted connection from client. connfd=%d\n", connfd);
-    print_socket_4tuple(connfd);
-    pthread_t tid;
-    pthread_create(&tid, NULL, readNextLine, (void *)(intptr_t)connfd);
-    while (!shared_done_reading) {
-      // printf("M1 before\n");
-      // fflush(stdout);
-      pthread_mutex_lock(&mutex);
-      // printf("M1 after\n");
-      // fflush(stdout);
-      while (!shared_line_ready && !shared_done_reading) {
-        // printf("M2 before\n");
-        // fflush(stdout);
-        pthread_cond_wait(&cond, &mutex);
-        // printf("M2 after\n");
-        // fflush(stdout);
-      }
-      if (shared_line_ready) {
-        printf("read: %s\n", shared_line);
-        // fflush(stdout);
-        if (shouldReplyWithEcho) {
-          write(connfd, "echo: ", 6);
-          write(connfd, shared_line,
-                strlen(shared_line)); // perf: return line len
-          write(connfd, "\r\n", 2);
-        }
-        shared_line_ready = false;
-        pthread_cond_signal(&cond);
-      }
-      pthread_mutex_unlock(&mutex);
-    }
-    pthread_join(tid, NULL);
-    printf("Connection closed. connfd=%d ", connfd);
+    handle_client(connfd, shouldReplyWithEcho);
+    printf("Client connection closed. connfd=%d ", connfd);
     print_socket_4tuple(connfd);
     close(connfd);
   }
