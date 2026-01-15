@@ -13,7 +13,7 @@ static bool shared_line_ready = false;
 static bool shared_done_reading = false;
 static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
-void *readNextLine(void *fdArg) {
+void *readNextLine_stream(void *fdArg) {
   int *fd = (int *)fdArg;
   char read_buf[READ_SIZE];
   char line_buf[MAX_LINE_LEN];
@@ -72,7 +72,7 @@ void *readNextLine(void *fdArg) {
   return NULL;
 }
 
-int main() {
+int main2() {
   FILE *file = fopen("./messages.txt", "r");
   if (file == NULL) {
     perror("Failed to open the file");
@@ -80,7 +80,7 @@ int main() {
   }
   pthread_t tid;
   int fd = fileno(file);
-  pthread_create(&tid, NULL, readNextLine, &fd);
+  pthread_create(&tid, NULL, readNextLine_stream, &fd);
 
   while (true) {
     // printf("M1 before\n"); fflush(stdout);

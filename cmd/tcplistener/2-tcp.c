@@ -161,7 +161,7 @@ int main(int argc, char *argv[]) {
     return EXIT_FAILURE;
   }
   char ip_out[69];
-  printf("Socket binded: ip=%s:%hu\n",
+  printf("Socket bound: ip=%s:%hu\n",
          inet_ntop(servaddr.sin_family, &servaddr.sin_addr, ip_out,
                    INET_ADDRSTRLEN),
          ntohs(servaddr.sin_port));
