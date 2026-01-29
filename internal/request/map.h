@@ -1,6 +1,7 @@
 #pragma once
 #include <stdint.h>
 #include <string.h>
+#include <stdlib.h>
 #include "assert.h"
 
 typedef enum { ENTRY_ERR, ENTRY_EMPTY, ENTRY_VALUE, ENTRY_TOMBSTONE } EntryType;
@@ -31,9 +32,7 @@ char* mapGet(StringMap const* self, char const* key);
 
 bool mapDelete(StringMap* self, char const* key);
 
-#define MAP_IMPLEMENTATION
 #ifdef MAP_IMPLEMENTATION
-#include <stdlib.h>
 
 #define MAP_GROW_CAPACITY(capacity) ((capacity) < 8 ? 8 : (capacity) * 2)
 
